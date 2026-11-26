@@ -120,6 +120,7 @@
                             <excludes>
                                 <exclude>**/framework/view/**</exclude>
                                 <exclude>**/framework/auth/**</exclude>
+                                <exclude>**/Ifs25026P6Pbo2026SpringbootCashflowApplication.class</exclude>
                             </excludes>
                         </configuration>
                     </execution>
@@ -133,6 +134,7 @@
                             <excludes>
                                 <exclude>**/framework/view/**</exclude>
                                 <exclude>**/framework/auth/**</exclude>
+                                <exclude>**/Ifs25026P6Pbo2026SpringbootCashflowApplication.class</exclude>
                             </excludes>
                         </configuration>
                     </execution>
@@ -146,6 +148,7 @@
                             <excludes>
                                 <exclude>**/framework/view/**</exclude>
                                 <exclude>**/framework/auth/**</exclude>
+                                <exclude>**/Ifs25026P6Pbo2026SpringbootCashflowApplication.class</exclude>
                             </excludes>
                             <rules>
                                 <rule>

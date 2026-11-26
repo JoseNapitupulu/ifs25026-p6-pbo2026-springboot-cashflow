@@ -75,4 +75,37 @@ class FinanceUseCaseTests {
         assertEquals(0, useCase.getBalance(1).balance());
         assertThrows(EntityNotFoundException.class, () -> useCase.removeTransaction(999));
     }
+
+    @Test
+    void supportsDefaultListingAndAdminListing() {
+        var first = useCase.addTransaction(1, "First", 100, TransactionType.INCOME, null);
+        var second = useCase.addTransaction(1, "Second", 50, TransactionType.EXPENSE, null);
+
+        assertEquals(2, useCase.listAllTransactions().size());
+        assertEquals(second.getId(), useCase.listTransactions(1, null, null, null).getFirst().getId());
+        assertEquals(2, useCase.listTransactions(1, " ", TransactionTypeFilter.ALL, SortOption.OLDEST_FIRST).size());
+        assertEquals(first.getId(), useCase.listTransactions(
+                1, "first", TransactionTypeFilter.ALL, SortOption.AMOUNT_DESC).getFirst().getId());
+        assertEquals(second.getId(), useCase.listTransactions(
+                1, null, TransactionTypeFilter.ALL, SortOption.AMOUNT_ASC).getFirst().getId());
+    }
+
+    @Test
+    void rejectsNullTextAndInvalidOwnerRemoval() {
+        assertThrows(ValidationException.class,
+                () -> useCase.addTransaction(1, null, 100, TransactionType.INCOME, null));
+        assertThrows(ValidationException.class,
+                () -> useCase.addTransaction(1, "Gaji", -1, TransactionType.INCOME, null));
+        assertThrows(ValidationException.class, () -> useCase.listTransactions(0, null, null, null));
+        assertThrows(EntityNotFoundException.class, () -> useCase.removeTransactionForUser(1, 4));
+        assertThrows(EntityNotFoundException.class, () -> useCase.removeTransaction(0));
+        assertThrows(EntityNotFoundException.class, () -> useCase.removeTransaction(-1));
+    }
+
+    @Test
+    void balanceArithmeticRejectsOverflowRatherThanReturningCorruptTotals() {
+        useCase.addTransaction(1, "large", Long.MAX_VALUE, TransactionType.INCOME, null);
+        useCase.addTransaction(1, "overflow", 1, TransactionType.INCOME, null);
+        assertThrows(ArithmeticException.class, () -> useCase.getBalance(1));
+    }
 }

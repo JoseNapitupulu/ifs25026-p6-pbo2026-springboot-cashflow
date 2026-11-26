@@ -33,12 +33,24 @@ class FinanceAiUseCaseTests {
     void rejectsBlankPromptsEmptyResponsesAndInvalidGeneratedRows() {
         FinanceUseCase finance = new FinanceUseCase(new InMemoryTransactionRepository());
         FinanceAiUseCase emptyResponse = new FinanceAiUseCase(prompt -> List.of(), finance);
+        assertThrows(ValidationException.class, () -> emptyResponse.generateTransactions(null));
         assertThrows(ValidationException.class, () -> emptyResponse.generateTransactions(" "));
 
+        FinanceAiUseCase nullResponse = new FinanceAiUseCase(prompt -> null, finance);
+        assertThrows(ValidationException.class, () -> nullResponse.generateTransactions("catat"));
         FinanceAiUseCase invalidResponse = new FinanceAiUseCase(prompt -> List.of(), finance);
         assertThrows(ValidationException.class, () -> invalidResponse.generateTransactions("catat"));
+        assertThrows(ValidationException.class, () -> invalidResponse.saveGenerated(1, null));
         assertThrows(ValidationException.class, () -> invalidResponse.saveGenerated(1, List.of(
                 new AiGeneratedTransaction(" ", 0, TransactionType.INCOME))));
+        assertThrows(ValidationException.class, () -> invalidResponse.saveGenerated(1, List.of(
+                new AiGeneratedTransaction("Valid", 0, TransactionType.INCOME))));
+        assertThrows(ValidationException.class, () -> invalidResponse.saveGenerated(1, List.of(
+                new AiGeneratedTransaction(null, 10, TransactionType.INCOME))));
+        assertThrows(ValidationException.class, () -> invalidResponse.saveGenerated(1, List.of(
+                new AiGeneratedTransaction("Valid", 10, null))));
+        assertThrows(ValidationException.class, () -> invalidResponse.saveGenerated(1, java.util.Arrays.asList(
+                (AiGeneratedTransaction) null)));
         assertThrows(ValidationException.class, () -> invalidResponse.saveGenerated(1, List.of()));
     }
 }

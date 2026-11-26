@@ -89,9 +89,6 @@ public class AppConfig {
             @Override
             public void addResourceHandlers(ResourceHandlerRegistry registry) {
                 String location = storage.root().toUri().toString();
-                if (!location.endsWith("/")) {
-                    location += "/";
-                }
                 registry.addResourceHandler("/uploads/**").addResourceLocations(location);
             }
         };

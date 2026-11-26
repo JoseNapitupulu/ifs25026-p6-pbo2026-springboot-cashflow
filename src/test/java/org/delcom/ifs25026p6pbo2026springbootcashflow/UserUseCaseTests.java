@@ -26,6 +26,9 @@ class UserUseCaseTests {
         assertEquals("old-hash", updated.getPasswordHash());
         assertEquals("photo.png", updated.getPhotoPath());
         assertEquals(1, useCase.listUsers().size());
+
+        useCase.updateProfile(user.getId(), "Nama tanpa password", null, null);
+        assertEquals("Nama tanpa password", useCase.getUser(user.getId()).getFullName());
     }
 
     @Test
@@ -35,6 +38,7 @@ class UserUseCaseTests {
         UserUseCase useCase = new UserUseCase(repository);
 
         assertThrows(ValidationException.class, () -> useCase.updateProfile(user.getId(), " ", null, null));
+        assertThrows(ValidationException.class, () -> useCase.updateProfile(user.getId(), null, null, null));
         assertThrows(ValidationException.class,
                 () -> useCase.updateProfile(user.getId(), "Nama", "short", null));
         useCase.updateProfile(user.getId(), "Nama", "password1", null);

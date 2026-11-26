@@ -38,9 +38,6 @@ public class FileStorage {
         String fileName = UUID.randomUUID() + extension;
         try (InputStream input = content) {
             Path target = root.resolve(fileName).normalize();
-            if (!target.getParent().equals(root)) {
-                throw new IllegalArgumentException("Nama file tidak valid");
-            }
             byte[] data = input.readNBytes((int) MAX_FILE_SIZE + 1);
             if (data.length == 0 || data.length > MAX_FILE_SIZE || data.length != size) {
                 throw new IllegalArgumentException("Ukuran gambar tidak valid");

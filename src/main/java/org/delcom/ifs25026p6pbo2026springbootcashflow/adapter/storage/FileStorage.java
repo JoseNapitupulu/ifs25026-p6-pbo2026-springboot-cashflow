@@ -9,7 +9,7 @@ import java.util.Locale;
 import java.util.UUID;
 
 public class FileStorage {
-    private static final long MAX_FILE_SIZE = 5 * 1024 * 1024;
+    private static final long MAX_FILE_SIZE = 5L * 1024 * 1024;
     private final Path root;
 
     public FileStorage(String uploadDir) {

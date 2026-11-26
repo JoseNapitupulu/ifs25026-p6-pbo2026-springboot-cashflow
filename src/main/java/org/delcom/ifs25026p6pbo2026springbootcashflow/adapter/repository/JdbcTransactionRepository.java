@@ -20,6 +20,7 @@ import java.util.function.Predicate;
 public class JdbcTransactionRepository implements ITransactionRepository {
     private static final String COLUMNS =
             "id, user_id, description, amount, type, proof_path, created_at";
+    private static final String SELECT_COLUMNS = "SELECT " + COLUMNS;
     private final DataSource dataSource;
 
     public JdbcTransactionRepository(DataSource dataSource) {
@@ -28,18 +29,18 @@ public class JdbcTransactionRepository implements ITransactionRepository {
 
     @Override
     public List<Transaction> findAll() {
-        return query("SELECT " + COLUMNS + " FROM transactions ORDER BY created_at DESC, id DESC", null);
+        return query(SELECT_COLUMNS + " FROM transactions ORDER BY created_at DESC, id DESC", null);
     }
 
     @Override
     public List<Transaction> findByUserId(int userId) {
-        return query("SELECT " + COLUMNS
+        return query(SELECT_COLUMNS
                 + " FROM transactions WHERE user_id = ? ORDER BY created_at DESC, id DESC", userId);
     }
 
     @Override
     public Optional<Transaction> findById(Integer id) {
-        String sql = "SELECT " + COLUMNS + " FROM transactions WHERE id = ?";
+        String sql = SELECT_COLUMNS + " FROM transactions WHERE id = ?";
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, id);

@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -36,22 +37,14 @@ class FileStorageTests {
     void rejectsUnsupportedContentTypeAndOversizedInput() {
         FileStorage storage = new FileStorage(tempDir.resolve("uploads").toString());
 
-        assertThrows(IllegalArgumentException.class,
-                () -> storage.save(new ByteArrayInputStream(new byte[]{1}), "image/svg+xml", 1));
-        assertThrows(IllegalArgumentException.class,
-                () -> storage.save(new ByteArrayInputStream(new byte[]{1}), "image/png", 6 * 1024 * 1024));
-        assertThrows(IllegalArgumentException.class,
-                () -> storage.save(new ByteArrayInputStream(new byte[]{1, 2}), "image/png", 1));
-        assertThrows(IllegalArgumentException.class,
-                () -> storage.save(new ByteArrayInputStream(new byte[0]), "image/png", 1));
-        assertThrows(IllegalArgumentException.class,
-                () -> storage.save(new ByteArrayInputStream(new byte[5 * 1024 * 1024 + 1]),
-                        "image/png", 1));
-        assertThrows(IllegalArgumentException.class,
-                () -> storage.save(new ByteArrayInputStream(new byte[]{1}), null, 1));
-        assertThrows(IllegalArgumentException.class, () -> storage.save(null, "image/png", 1));
-        assertThrows(IllegalArgumentException.class,
-                () -> storage.save(new ByteArrayInputStream(new byte[]{1}), "image/png", 0));
+        assertInvalidSave(storage, new byte[]{1}, "image/svg+xml", 1);
+        assertInvalidSave(storage, new byte[]{1}, "image/png", 6 * 1024 * 1024);
+        assertInvalidSave(storage, new byte[]{1, 2}, "image/png", 1);
+        assertInvalidSave(storage, new byte[0], "image/png", 1);
+        assertInvalidSave(storage, new byte[5 * 1024 * 1024 + 1], "image/png", 1);
+        assertInvalidSave(storage, new byte[]{1}, null, 1);
+        assertInvalidSave(storage, null, "image/png", 1);
+        assertInvalidSave(storage, new byte[]{1}, "image/png", 0);
         assertThrows(IllegalArgumentException.class, () -> storage.delete("../outside.png"));
         assertThrows(IllegalArgumentException.class, () -> storage.delete("."));
     }
@@ -59,13 +52,13 @@ class FileStorageTests {
     @Test
     void reportsFilesystemFailuresAndInputErrors() throws Exception {
         FileStorage storage = new FileStorage(tempDir.resolve("uploads").toString());
-        assertThrows(java.io.UncheckedIOException.class, () -> storage.save(
-                new java.io.InputStream() {
-                    @Override
-                    public int read() throws java.io.IOException {
-                        throw new java.io.IOException("read failed");
-                    }
-                }, "image/png", 1));
+                InputStream failingInput = new InputStream() {
+                        @Override
+                        public int read() throws java.io.IOException {
+                                throw new java.io.IOException("read failed");
+                        }
+                };
+                assertThrows(java.io.UncheckedIOException.class, () -> storage.save(failingInput, "image/png", 1));
 
         Files.createDirectories(storage.root().resolve("folder"));
         Files.write(storage.root().resolve("folder").resolve("child"), new byte[]{1});
@@ -76,4 +69,9 @@ class FileStorageTests {
         assertThrows(java.io.UncheckedIOException.class,
                 () -> new FileStorage(occupied.resolve("child").toString()));
     }
+
+        private static void assertInvalidSave(FileStorage storage, byte[] data, String contentType, long size) {
+                InputStream content = data == null ? null : new ByteArrayInputStream(data);
+                assertThrows(IllegalArgumentException.class, () -> storage.save(content, contentType, size));
+        }
 }

@@ -41,23 +41,21 @@ import java.util.concurrent.CompletionException;
 @Route(value = "", layout = MainLayout.class)
 @PageTitle("Ringkasan | Cashflow")
 public class FinanceView extends VerticalLayout {
-    private final FinanceUseCase financeUseCase;
-    private final FinanceAiUseCase financeAiUseCase;
-    private final FinancePresenter presenter;
-    private final FileStorage fileStorage;
-    private final User currentUser;
+    private static final String DESCRIPTION_LABEL = "Keterangan";
+    private static final String TRANSACTION_PROOF_LABEL = "Bukti transaksi";
+    private final transient FinanceUseCase financeUseCase;
+    private final transient FinanceAiUseCase financeAiUseCase;
+    private final transient FinancePresenter presenter;
+    private final transient FileStorage fileStorage;
+    private final transient User currentUser;
     private final Grid<Transaction> grid = new Grid<>(Transaction.class, false);
-    private final TextField search = new TextField("Cari keterangan");
+    private final TextField search = new TextField("Cari " + DESCRIPTION_LABEL.toLowerCase());
     private final ComboBox<TransactionTypeFilter> typeFilter = new ComboBox<>("Tipe");
     private final ComboBox<SortOption> sortOption = new ComboBox<>("Urutkan");
     private final Span incomeValue = new Span();
     private final Span expenseValue = new Span();
     private final Span balanceValue = new Span();
     private final Span transactionCount = new Span();
-    private TransactionType dialogType;
-    private byte[] proofData;
-    private String proofContentType;
-    private long proofSize;
 
     public FinanceView(
             FinanceUseCase financeUseCase,
@@ -126,7 +124,7 @@ public class FinanceView extends VerticalLayout {
 
     private Grid<Transaction> buildGrid() {
         grid.addColumn(Transaction::getId).setHeader("ID").setAutoWidth(true);
-        grid.addColumn(Transaction::getDescription).setHeader("Keterangan").setFlexGrow(1);
+        grid.addColumn(Transaction::getDescription).setHeader(DESCRIPTION_LABEL).setFlexGrow(1);
         grid.addColumn(transaction -> presenter.formatMoney(transaction.getAmount()))
                 .setHeader("Jumlah").setAutoWidth(true);
         grid.addColumn(transaction -> transaction.getType().label()).setHeader("Tipe").setAutoWidth(true);
@@ -134,7 +132,7 @@ public class FinanceView extends VerticalLayout {
             if (transaction.getProofPath() == null || transaction.getProofPath().isBlank()) {
                 return new Span("—");
             }
-            Image image = new Image("/uploads/" + transaction.getProofPath(), "Bukti transaksi");
+            Image image = new Image("/uploads/" + transaction.getProofPath(), TRANSACTION_PROOF_LABEL);
             image.setWidth("48px");
             image.setHeight("48px");
             image.getStyle().set("object-fit", "cover").set("cursor", "zoom-in");
@@ -160,20 +158,15 @@ public class FinanceView extends VerticalLayout {
     }
 
     private void openTransactionDialog(TransactionType type) {
-        dialogType = type;
-        proofData = null;
-        proofContentType = null;
-        proofSize = 0;
         Dialog dialog = new Dialog();
         dialog.setHeaderTitle(type == TransactionType.INCOME ? "Tambah pemasukan" : "Tambah pengeluaran");
-        TextField description = new TextField("Keterangan");
+        TextField description = new TextField(DESCRIPTION_LABEL);
         description.setWidthFull();
         TextField amount = new TextField("Jumlah (rupiah)");
         amount.setPlaceholder("Contoh: 150000");
+        ProofUploadState proofUpload = new ProofUploadState();
         Upload upload = new Upload(UploadHandler.inMemory((metadata, data) -> {
-            proofData = data;
-            proofContentType = metadata.contentType();
-            proofSize = metadata.contentLength();
+            proofUpload.set(data, metadata.contentType(), metadata.contentLength());
         }));
         upload.setAcceptedMimeTypes("image/png", "image/jpeg", "image/webp");
         upload.setMaxFiles(1);
@@ -188,11 +181,12 @@ public class FinanceView extends VerticalLayout {
                 if (parsedAmount <= 0) {
                     throw new IllegalArgumentException("Jumlah harus lebih besar dari nol");
                 }
-                String path = proofContentType == null
+                String path = proofUpload.contentType() == null
                         ? null
-                        : fileStorage.save(new ByteArrayInputStream(proofData), proofContentType, proofSize);
+                    : fileStorage.save(new ByteArrayInputStream(proofUpload.data()),
+                        proofUpload.contentType(), proofUpload.size());
                 financeUseCase.addTransaction(currentUser.getId(), description.getValue(),
-                        parsedAmount, dialogType, path);
+                    parsedAmount, type, path);
                 dialog.close();
                 refresh();
                 Notification.show("Transaksi berhasil disimpan");
@@ -231,13 +225,38 @@ public class FinanceView extends VerticalLayout {
 
     private void showProof(String path) {
         Dialog dialog = new Dialog();
-        dialog.setHeaderTitle("Bukti transaksi");
-        Image image = new Image("/uploads/" + path, "Bukti transaksi");
+        dialog.setHeaderTitle(TRANSACTION_PROOF_LABEL);
+        Image image = new Image("/uploads/" + path, TRANSACTION_PROOF_LABEL);
         image.setMaxWidth("80vw");
         image.setMaxHeight("70vh");
         dialog.add(image);
         dialog.getFooter().add(new Button("Tutup", event -> dialog.close()));
         dialog.open();
+    }
+
+    private static final class ProofUploadState implements java.io.Serializable {
+        private static final long serialVersionUID = 1L;
+        private byte[] data;
+        private String contentType;
+        private long size;
+
+        void set(byte[] data, String contentType, long size) {
+            this.data = data;
+            this.contentType = contentType;
+            this.size = size;
+        }
+
+        byte[] data() {
+            return data;
+        }
+
+        String contentType() {
+            return contentType;
+        }
+
+        long size() {
+            return size;
+        }
     }
 
     private void openAiDialog() {
@@ -250,7 +269,7 @@ public class FinanceView extends VerticalLayout {
         progress.setIndeterminate(true);
         progress.setVisible(false);
         Grid<AiGeneratedTransaction> preview = new Grid<>();
-        preview.addColumn(AiGeneratedTransaction::description).setHeader("Keterangan");
+        preview.addColumn(AiGeneratedTransaction::description).setHeader(DESCRIPTION_LABEL);
         preview.addColumn(item -> presenter.formatMoney(item.amount())).setHeader("Jumlah");
         preview.addColumn(item -> item.type().label()).setHeader("Tipe");
         preview.setSelectionMode(Grid.SelectionMode.MULTI);
@@ -258,45 +277,67 @@ public class FinanceView extends VerticalLayout {
         Button generate = new Button("Proses AI");
         Button save = new Button("Simpan pilihan");
         save.setEnabled(false);
-        generate.addClickListener(event -> {
-            if (prompt.getValue() == null || prompt.getValue().isBlank()) {
-                Notification.show("Catatan keuangan tidak boleh kosong");
-                return;
-            }
-            generate.setEnabled(false);
-            progress.setVisible(true);
-            UI ui = UI.getCurrent();
-            CompletableFuture.supplyAsync(() -> financeAiUseCase.generateTransactions(prompt.getValue()))
-                    .whenComplete((items, error) -> ui.access(() -> {
-                        generate.setEnabled(true);
-                        progress.setVisible(false);
-                        if (error != null) {
-                            Throwable cause = error instanceof CompletionException && error.getCause() != null
-                                    ? error.getCause() : error;
-                            Notification.show(cause.getMessage() == null
-                                    ? "Gagal memproses permintaan AI" : cause.getMessage(),
-                                    5000, Notification.Position.TOP_CENTER);
-                            return;
-                        }
-                        preview.setItems(items);
-                        preview.setVisible(true);
-                        save.setEnabled(true);
-                    }));
-        });
-        save.addClickListener(event -> {
-            try {
-                List<AiGeneratedTransaction> selected = List.copyOf(preview.getSelectedItems());
-                financeAiUseCase.saveGenerated(currentUser.getId(), selected);
-                dialog.close();
-                refresh();
-                Notification.show("Transaksi AI berhasil disimpan");
-            } catch (DomainException ex) {
-                Notification.show(ex.getMessage(), 3500, Notification.Position.TOP_CENTER);
-            }
-        });
+        generate.addClickListener(event -> generateAiTransactions(prompt, generate, progress, preview, save));
+        save.addClickListener(event -> saveGeneratedTransactions(dialog, preview));
         Button cancel = new Button("Tutup", event -> dialog.close());
         dialog.add(new VerticalLayout(prompt, generate, progress, preview));
         dialog.getFooter().add(cancel, save);
         dialog.open();
+    }
+
+    private void generateAiTransactions(
+            TextArea prompt,
+            Button generate,
+            ProgressBar progress,
+            Grid<AiGeneratedTransaction> preview,
+            Button save
+    ) {
+        if (prompt.getValue() == null || prompt.getValue().isBlank()) {
+            Notification.show("Catatan keuangan tidak boleh kosong");
+            return;
+        }
+        generate.setEnabled(false);
+        progress.setVisible(true);
+        UI ui = UI.getCurrent();
+        CompletableFuture.supplyAsync(() -> financeAiUseCase.generateTransactions(prompt.getValue()))
+                .whenComplete((items, error) -> ui.access(() ->
+                        finishAiGeneration(items, error, generate, progress, preview, save)));
+    }
+
+    private void finishAiGeneration(
+            List<AiGeneratedTransaction> items,
+            Throwable error,
+            Button generate,
+            ProgressBar progress,
+            Grid<AiGeneratedTransaction> preview,
+            Button save
+    ) {
+        generate.setEnabled(true);
+        progress.setVisible(false);
+        if (error != null) {
+            Notification.show(aiErrorMessage(error), 5000, Notification.Position.TOP_CENTER);
+            return;
+        }
+        preview.setItems(items);
+        preview.setVisible(true);
+        save.setEnabled(true);
+    }
+
+    private String aiErrorMessage(Throwable error) {
+        Throwable cause = error instanceof CompletionException && error.getCause() != null
+                ? error.getCause() : error;
+        return cause.getMessage() == null ? "Gagal memproses permintaan AI" : cause.getMessage();
+    }
+
+    private void saveGeneratedTransactions(Dialog dialog, Grid<AiGeneratedTransaction> preview) {
+        try {
+            List<AiGeneratedTransaction> selected = List.copyOf(preview.getSelectedItems());
+            financeAiUseCase.saveGenerated(currentUser.getId(), selected);
+            dialog.close();
+            refresh();
+            Notification.show("Transaksi AI berhasil disimpan");
+        } catch (DomainException ex) {
+            Notification.show(ex.getMessage(), 3500, Notification.Position.TOP_CENTER);
+        }
     }
 }

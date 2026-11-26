@@ -18,8 +18,8 @@ import org.delcom.ifs25026p6pbo2026springbootcashflow.usecase.UserUseCase;
 @Route(value = "users", layout = MainLayout.class)
 @PageTitle("Pengguna | Cashflow")
 public class UsersView extends VerticalLayout implements BeforeEnterObserver {
-    private final IUserRepository userRepository;
-    private final UserUseCase userUseCase;
+    private final transient IUserRepository userRepository;
+    private final transient UserUseCase userUseCase;
     private final Grid<User> grid = new Grid<>();
 
     public UsersView(UserUseCase userUseCase, IUserRepository userRepository) {

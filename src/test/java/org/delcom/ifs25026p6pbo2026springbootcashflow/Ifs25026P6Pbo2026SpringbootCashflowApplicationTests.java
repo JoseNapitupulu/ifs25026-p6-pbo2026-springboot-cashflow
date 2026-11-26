@@ -69,9 +69,10 @@ class Ifs25026P6Pbo2026SpringbootCashflowApplicationTests {
             assertTrue(userRepository.findBy(item -> item.getId() == secondUser.getId()).size() == 1);
             assertTrue(userRepository.deleteById(secondUser.getId()));
             assertTrue(!userRepository.deleteById(secondUser.getId()));
+            var missingUser = new org.delcom.ifs25026p6pbo2026springbootcashflow.domain.entity.User(
+                    999999, "missing", "hash", "Missing", Role.USER, null);
             org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException.class,
-                    () -> userRepository.update(new org.delcom.ifs25026p6pbo2026springbootcashflow.domain.entity.User(
-                            999999, "missing", "hash", "Missing", Role.USER, null)));
+                    () -> userRepository.update(missingUser));
 
             SchemaInitializer.initialize(dataSource);
         } finally {

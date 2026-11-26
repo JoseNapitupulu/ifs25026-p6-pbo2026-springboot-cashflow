@@ -8,6 +8,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -119,18 +120,19 @@ class OpenAiFinanceServiceTests {
 
     @Test
     void rejectsMissingAiConfigurationAndInvalidEndpoints() {
-        assertThrows(IllegalStateException.class,
-                () -> new OpenAiFinanceService("endpoint", null, "model").generateTransactions("test"));
-        assertThrows(IllegalStateException.class,
-                () -> new OpenAiFinanceService("endpoint", "key", "model").generateTransactions("test"));
-        assertThrows(IllegalStateException.class,
-                () -> new OpenAiFinanceService(null, "valid-key", "model").generateTransactions("test"));
-        assertThrows(IllegalStateException.class,
-                () -> new OpenAiFinanceService("  ", "valid-key", "model").generateTransactions("test"));
-        assertThrows(IllegalStateException.class,
-                () -> new OpenAiFinanceService("endpoint", " ", "model").generateTransactions("test"));
-        assertThrows(IllegalArgumentException.class,
-                () -> new OpenAiFinanceService("://bad", "valid-key", "model").generateTransactions("test"));
+        OpenAiFinanceService missingKey = new OpenAiFinanceService("endpoint", null, "model");
+        OpenAiFinanceService placeholderKey = new OpenAiFinanceService("endpoint", "key", "model");
+        OpenAiFinanceService missingEndpoint = new OpenAiFinanceService(null, "valid-key", "model");
+        OpenAiFinanceService blankEndpoint = new OpenAiFinanceService("  ", "valid-key", "model");
+        OpenAiFinanceService blankKey = new OpenAiFinanceService("endpoint", " ", "model");
+        OpenAiFinanceService malformedEndpoint = new OpenAiFinanceService("://bad", "valid-key", "model");
+
+        assertThrows(IllegalStateException.class, () -> missingKey.generateTransactions("test"));
+        assertThrows(IllegalStateException.class, () -> placeholderKey.generateTransactions("test"));
+        assertThrows(IllegalStateException.class, () -> missingEndpoint.generateTransactions("test"));
+        assertThrows(IllegalStateException.class, () -> blankEndpoint.generateTransactions("test"));
+        assertThrows(IllegalStateException.class, () -> blankKey.generateTransactions("test"));
+        assertThrows(IllegalArgumentException.class, () -> malformedEndpoint.generateTransactions("test"));
     }
 
     @Test
@@ -147,8 +149,8 @@ class OpenAiFinanceServiceTests {
                 "{\"choices\":[{\"message\":{}}]}",
                 "{\"choices\":[{\"message\":{\"content\":42}}]}"
         )) {
-            assertThrows(IllegalStateException.class,
-                    () -> serviceForResponse(body, 200).generateTransactions("test"));
+                        OpenAiFinanceService malformedResponse = serviceForResponse(body, 200);
+                        assertThrows(IllegalStateException.class, () -> malformedResponse.generateTransactions("test"));
             stopServer();
         }
 
@@ -168,8 +170,8 @@ class OpenAiFinanceServiceTests {
                 "[{\"description\":\"x\",\"amount\":999999999999999999999999999999,\"type\":\"INCOME\"}]",
                 "[{\"description\":\"x\",\"amount\":1,\"type\":\"invalid\"}]"
         )) {
-            assertThrows(ValidationException.class,
-                    () -> serviceForResponse(wrapContent(content), 200).generateTransactions("test"));
+            OpenAiFinanceService invalidTransaction = serviceForResponse(wrapContent(content), 200);
+            assertThrows(ValidationException.class, () -> invalidTransaction.generateTransactions("test"));
             stopServer();
         }
     }
@@ -192,7 +194,7 @@ class OpenAiFinanceServiceTests {
     }
 
     @Test
-    void rejectsInvalidJsonSyntaxAndTrailingData() throws IOException {
+    void rejectsInvalidJsonSyntaxAndTrailingData() {
         for (String content : List.of(
                 "",
                 "x",
@@ -210,8 +212,8 @@ class OpenAiFinanceServiceTests {
                 "[{\"description\":\"bad\\",
                 "[{\"description\":\"x\",\"amount\":1e,\"type\":\"INCOME\"}]"
         )) {
-            assertThrows(RuntimeException.class,
-                    () -> serviceForResponse(wrapContent(content), 200).generateTransactions("test"));
+                        OpenAiFinanceService invalidJson = serviceForResponseUnchecked(wrapContent(content), 200);
+                        assertThrows(RuntimeException.class, () -> invalidJson.generateTransactions("test"));
             stopServer();
         }
     }
@@ -248,5 +250,13 @@ class OpenAiFinanceServiceTests {
         String escaped = content.replace("\\", "\\\\").replace("\"", "\\\"")
                 .replace("\n", "\\n").replace("\r", "\\r");
         return "{\"choices\":[{\"message\":{\"content\":\"" + escaped + "\"}}]}";
+    }
+
+    private OpenAiFinanceService serviceForResponseUnchecked(String responseBody, int status) {
+        try {
+            return serviceForResponse(responseBody, status);
+        } catch (IOException ex) {
+            throw new UncheckedIOException(ex);
+        }
     }
 }

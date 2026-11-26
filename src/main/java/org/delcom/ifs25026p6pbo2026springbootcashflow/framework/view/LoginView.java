@@ -22,7 +22,7 @@ import org.delcom.ifs25026p6pbo2026springbootcashflow.usecase.AuthUseCase;
 @Route("login")
 @PageTitle("Masuk | Cashflow")
 public class LoginView extends VerticalLayout implements BeforeEnterObserver {
-    private final IUserRepository userRepository;
+    private final transient IUserRepository userRepository;
 
     public LoginView(AuthUseCase authUseCase, IUserRepository userRepository) {
         this.userRepository = userRepository;

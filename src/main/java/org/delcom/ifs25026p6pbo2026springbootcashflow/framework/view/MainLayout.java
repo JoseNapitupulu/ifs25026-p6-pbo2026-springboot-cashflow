@@ -19,7 +19,7 @@ import org.delcom.ifs25026p6pbo2026springbootcashflow.framework.auth.AuthSession
 
 @PreserveOnRefresh
 public class MainLayout extends AppLayout implements BeforeEnterObserver {
-    private final IUserRepository userRepository;
+    private final transient IUserRepository userRepository;
     private final VerticalLayout drawer = new VerticalLayout();
 
     public MainLayout(IUserRepository userRepository) {

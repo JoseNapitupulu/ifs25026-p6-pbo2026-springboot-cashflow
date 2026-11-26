@@ -4,11 +4,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 
-public interface IRepository<T, ID> {
+public interface IRepository<T, I> {
     List<T> findAll();
-    Optional<T> findById(ID id);
+    Optional<T> findById(I id);
     T save(T entity);
-    boolean deleteById(ID id);
+    boolean deleteById(I id);
     void update(T entity);
     List<T> findBy(Predicate<T> predicate);
 }

@@ -32,8 +32,8 @@ class RepositoryAdapterTests {
         user.changeFullName("Jose N.");
         repository.update(user);
         assertEquals("Jose N.", repository.findById(1).orElseThrow().getFullName());
-        assertThrows(IllegalStateException.class,
-                () -> repository.update(new User(2, "other", "hash", "Other", Role.USER, null)));
+        User missingUser = new User(2, "other", "hash", "Other", Role.USER, null);
+        assertThrows(IllegalStateException.class, () -> repository.update(missingUser));
         assertTrue(repository.deleteById(1));
         assertFalse(repository.deleteById(1));
         assertTrue(repository.findAll().isEmpty());

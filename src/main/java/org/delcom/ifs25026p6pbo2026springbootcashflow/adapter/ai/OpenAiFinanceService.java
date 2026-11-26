@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 
 public class OpenAiFinanceService implements IFinanceAiService {
+    private static final String CONTENT_KEY = "content";
     private final String endpoint;
     private final String key;
     private final String model;
@@ -39,11 +40,11 @@ public class OpenAiFinanceService implements IFinanceAiService {
                 "model", model,
                 "temperature", 0.2,
                 "messages", List.of(
-                        Map.of("role", "system", "content",
+                        Map.of("role", "system", CONTENT_KEY,
                                 "Buat daftar transaksi keuangan dari permintaan pengguna. Balas hanya JSON array "
                                         + "dengan setiap objek berisi description (string), amount (bilangan bulat "
                                         + "rupiah positif), dan type (INCOME atau EXPENSE). Jangan gunakan markdown."),
-                        Map.of("role", "user", "content", prompt)
+                        Map.of("role", "user", CONTENT_KEY, prompt)
                 )
         ));
         HttpRequest request = HttpRequest.newBuilder(completionUri())
@@ -93,7 +94,7 @@ public class OpenAiFinanceService implements IFinanceAiService {
                 || choices.isEmpty()
                 || !(choices.get(0) instanceof Map<?, ?> choice)
                 || !(choice.get("message") instanceof Map<?, ?> message)
-                || !(message.get("content") instanceof String content)) {
+                || !(message.get(CONTENT_KEY) instanceof String content)) {
             throw new IllegalStateException("Respons AI tidak memiliki choices[0].message.content");
         }
         String normalizedContent = content.trim();

@@ -23,9 +23,9 @@ import java.util.List;
 @Route(value = "user-transactions", layout = MainLayout.class)
 @PageTitle("Transaksi pengguna | Cashflow")
 public class UserTransactionsView extends VerticalLayout implements BeforeEnterObserver {
-    private final IUserRepository userRepository;
-    private final FinanceUseCase financeUseCase;
-    private final UserUseCase userUseCase;
+    private final transient IUserRepository userRepository;
+    private final transient FinanceUseCase financeUseCase;
+    private final transient UserUseCase userUseCase;
     private final Grid<Transaction> grid = new Grid<>();
 
     public UserTransactionsView(

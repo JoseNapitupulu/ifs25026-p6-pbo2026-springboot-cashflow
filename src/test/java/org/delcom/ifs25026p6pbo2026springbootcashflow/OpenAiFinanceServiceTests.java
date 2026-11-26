@@ -71,6 +71,15 @@ class OpenAiFinanceServiceTests {
     }
 
     @Test
+    void trimsLongTrailingSlashSuffixFromEndpoint() throws IOException {
+        OpenAiFinanceService service = serviceForResponse(
+                wrapContent("[{\"description\":\"ok\",\"amount\":1,\"type\":\"INCOME\"}]"),
+                200, "/".repeat(100_000));
+
+        assertEquals("ok", service.generateTransactions("prompt").getFirst().description());
+    }
+
+    @Test
     void serializesNullJsonValue() throws Exception {
         var stringify = Class.forName(OpenAiFinanceService.class.getName() + "$Json")
                 .getDeclaredMethod("stringify", Object.class);
@@ -78,6 +87,17 @@ class OpenAiFinanceServiceTests {
 
         assertEquals("null", stringify.invoke(null, new Object[]{null}));
         assertEquals("true", stringify.invoke(null, true));
+    }
+
+    @Test
+    void acceptsOnlySuccessfulHttpStatusCodes() throws Exception {
+        var isSuccessfulStatus = OpenAiFinanceService.class.getDeclaredMethod("isSuccessfulStatus", int.class);
+        isSuccessfulStatus.setAccessible(true);
+
+        assertEquals(false, isSuccessfulStatus.invoke(null, 199));
+        assertEquals(true, isSuccessfulStatus.invoke(null, 200));
+        assertEquals(true, isSuccessfulStatus.invoke(null, 299));
+        assertEquals(false, isSuccessfulStatus.invoke(null, 300));
     }
 
     @Test
@@ -89,6 +109,12 @@ class OpenAiFinanceServiceTests {
 
         assertEquals(1, result.size());
         assertEquals(TransactionType.INCOME, result.getFirst().type());
+
+        stopServer();
+        OpenAiFinanceService unlabelledFence = serviceForResponse(
+                wrapContent("```\n [ { \"description\":\"Bonus\", \"amount\":50, \"type\":\"income\" } ] \n```"),
+                200);
+        assertEquals("Bonus", unlabelledFence.generateTransactions("bonus").getFirst().description());
     }
 
     @Test
@@ -196,6 +222,12 @@ class OpenAiFinanceServiceTests {
 
     private OpenAiFinanceService serviceForResponse(
             String responseBody, int status, boolean fullCompletionEndpoint) throws IOException {
+        return serviceForResponse(
+                responseBody, status, fullCompletionEndpoint ? "/v1/chat/completions" : "");
+    }
+
+    private OpenAiFinanceService serviceForResponse(
+            String responseBody, int status, String endpointSuffix) throws IOException {
         byte[] response = responseBody.getBytes(StandardCharsets.UTF_8);
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         server.createContext("/", exchange -> {
@@ -208,7 +240,7 @@ class OpenAiFinanceServiceTests {
         server.start();
         return new OpenAiFinanceService(
                 "http://127.0.0.1:" + server.getAddress().getPort()
-                        + (fullCompletionEndpoint ? "/v1/chat/completions" : ""),
+                        + endpointSuffix,
                 "valid-key", "test-model");
     }
 

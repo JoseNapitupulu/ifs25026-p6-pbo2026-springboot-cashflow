@@ -55,7 +55,7 @@ public class OpenAiFinanceService implements IFinanceAiService {
         try {
             HttpResponse<String> response = httpClient.send(
                     request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-            if (response.statusCode() >= 300) {
+            if (!isSuccessfulStatus(response.statusCode())) {
                 throw new IllegalStateException("Layanan AI mengembalikan HTTP " + response.statusCode());
             }
             return parseTransactions(extractContent(Json.parse(response.body())));
@@ -68,7 +68,12 @@ public class OpenAiFinanceService implements IFinanceAiService {
     }
 
     private URI completionUri() {
-        String normalized = endpoint == null ? "" : endpoint.trim().replaceAll("/+$", "");
+        String normalized = endpoint == null ? "" : endpoint.trim();
+        int end = normalized.length();
+        while (end > 0 && normalized.charAt(end - 1) == '/') {
+            end--;
+        }
+        normalized = normalized.substring(0, end);
         if (normalized.isEmpty()) {
             throw new IllegalStateException("Konfigurasi OPENAI_ENDPOINT belum diisi");
         }
@@ -76,6 +81,10 @@ public class OpenAiFinanceService implements IFinanceAiService {
             normalized += "/chat/completions";
         }
         return URI.create(normalized);
+    }
+
+    static boolean isSuccessfulStatus(int statusCode) {
+        return statusCode >= 200 && statusCode < 300;
     }
 
     private static String extractContent(Object response) {
@@ -87,7 +96,18 @@ public class OpenAiFinanceService implements IFinanceAiService {
                 || !(message.get("content") instanceof String content)) {
             throw new IllegalStateException("Respons AI tidak memiliki choices[0].message.content");
         }
-        return content.trim().replaceAll("(?s)^```(?:json)?\\s*|\\s*```$", "");
+        String normalizedContent = content.trim();
+        if (normalizedContent.startsWith("```")) {
+            normalizedContent = normalizedContent.substring(3);
+            if (normalizedContent.startsWith("json")) {
+                normalizedContent = normalizedContent.substring(4);
+            }
+            normalizedContent = normalizedContent.stripLeading();
+        }
+        if (normalizedContent.endsWith("```")) {
+            normalizedContent = normalizedContent.substring(0, normalizedContent.length() - 3).stripTrailing();
+        }
+        return normalizedContent;
     }
 
     private static List<AiGeneratedTransaction> parseTransactions(String content) {

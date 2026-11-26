@@ -13,6 +13,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import javax.sql.DataSource;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
@@ -28,6 +29,7 @@ class Ifs25026P6Pbo2026SpringbootCashflowApplicationTests {
 
     @Test
     void contextLoads() {
+        assertNotNull(dataSource);
     }
 
     @Test

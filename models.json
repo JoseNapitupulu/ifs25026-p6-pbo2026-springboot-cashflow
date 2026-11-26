@@ -1,0 +1,29 @@
+{
+  "providers": [
+    {
+      "name": "openai",
+      "models": [
+        {
+          "name": "gpt-4o",
+          "endpoint": "https://api.openai.com/v1",
+          "key": "${OPENAI_KEY}"
+        },
+        {
+          "name": "gpt-4o-mini",
+          "endpoint": "https://api.openai.com/v1",
+          "key": "${OPENAI_KEY}"
+        }
+      ]
+    },
+    {
+      "name": "bai",
+      "models": [
+        {
+          "name": "deepseek-v4.1-flash",
+          "endpoint": "https://api.b.ai/v1/chat/completions",
+          "key": "${BAI_KEY}"
+        }
+      ]
+    }
+  ]
+}

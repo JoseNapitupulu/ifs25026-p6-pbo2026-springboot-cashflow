@@ -1,0 +1,29 @@
+html,
+body {
+  background: #f8fafc;
+  color: #111827;
+}
+
+vaadin-button,
+vaadin-context-menu-item,
+vaadin-tab,
+vaadin-grid-sorter,
+vaadin-drawer-toggle,
+vaadin-menu-bar-button {
+  cursor: pointer;
+}
+
+vaadin-button[disabled],
+vaadin-context-menu-item[disabled] {
+  cursor: not-allowed;
+}
+
+vaadin-dialog-overlay::part(header) {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+vaadin-dialog-overlay::part(footer) {
+  background: #f3f4f6;
+  justify-content: flex-end;
+}

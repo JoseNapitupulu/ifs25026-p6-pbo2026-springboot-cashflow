@@ -165,9 +165,8 @@ public class FinanceView extends VerticalLayout {
         TextField amount = new TextField("Jumlah (rupiah)");
         amount.setPlaceholder("Contoh: 150000");
         ProofUploadState proofUpload = new ProofUploadState();
-        Upload upload = new Upload(UploadHandler.inMemory((metadata, data) -> {
-            proofUpload.set(data, metadata.contentType(), metadata.contentLength());
-        }));
+        Upload upload = new Upload(UploadHandler.inMemory((metadata, data) ->
+                proofUpload.set(data, metadata.contentType(), metadata.contentLength())));
         upload.setAcceptedMimeTypes("image/png", "image/jpeg", "image/webp");
         upload.setMaxFiles(1);
         upload.setMaxFileSize(5 * 1024 * 1024);

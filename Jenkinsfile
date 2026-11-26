@@ -67,17 +67,6 @@ pipeline {
                     ./mvnw -B clean verify -Pproduction \
                         -Dmaven.repo.local="$MAVEN_LOCAL_REPO"
 
-                    # The scanner runs in another container, so copy resolved dependencies into the workspace.
-                    echo "=== Prepare Sonar Java Libraries ==="
-                    ./mvnw -B org.apache.maven.plugins:maven-dependency-plugin:3.11.0:copy-dependencies \
-                        -DincludeScope=runtime \
-                        -DoutputDirectory=target/sonar-libraries/main \
-                        -Dmaven.repo.local="$MAVEN_LOCAL_REPO"
-                    ./mvnw -B org.apache.maven.plugins:maven-dependency-plugin:3.11.0:copy-dependencies \
-                        -DincludeScope=test \
-                        -DoutputDirectory=target/sonar-libraries/test \
-                        -Dmaven.repo.local="$MAVEN_LOCAL_REPO"
-
                     echo "=== Build & Tests Passed ==="
                     ls -lh target/*.jar || true
                     ls -lh target/site/jacoco/jacoco.xml || true

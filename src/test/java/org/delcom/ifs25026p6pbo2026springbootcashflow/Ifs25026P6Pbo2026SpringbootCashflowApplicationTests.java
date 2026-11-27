@@ -1,5 +1,6 @@
 package org.delcom.ifs25026p6pbo2026springbootcashflow;
 
+import com.vaadin.flow.server.AppShellSettings;
 import org.delcom.ifs25026p6pbo2026springbootcashflow.domain.entity.Role;
 import org.delcom.ifs25026p6pbo2026springbootcashflow.domain.entity.Transaction;
 import org.delcom.ifs25026p6pbo2026springbootcashflow.domain.entity.TransactionType;
@@ -15,6 +16,8 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 @SpringBootTest
 class Ifs25026P6Pbo2026SpringbootCashflowApplicationTests {
@@ -30,6 +33,16 @@ class Ifs25026P6Pbo2026SpringbootCashflowApplicationTests {
     @Test
     void contextLoads() {
         assertNotNull(dataSource);
+    }
+
+    @Test
+    void configuresPageDescription() {
+        AppShellSettings settings = mock(AppShellSettings.class);
+
+        new App().configurePage(settings);
+
+        verify(settings).addMetaTag("description",
+                "Masuk ke Cashflow untuk mencatat dan mengelola pemasukan, pengeluaran, serta saldo keuangan.");
     }
 
     @Test

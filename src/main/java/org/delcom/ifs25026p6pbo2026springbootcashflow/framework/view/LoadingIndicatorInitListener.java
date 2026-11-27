@@ -5,6 +5,7 @@ import com.vaadin.flow.server.VaadinServiceInitListener;
 public class LoadingIndicatorInitListener implements VaadinServiceInitListener {
     private static final String LOADING_INDICATOR_SCRIPT = """
             if (!document.getElementById('cashflow-loading')) {
+              document.documentElement.setAttribute('lang', 'id');
               const indicator = document.createElement('div');
               indicator.id = 'cashflow-loading';
               indicator.textContent = 'Memuat...';
@@ -15,6 +16,14 @@ public class LoadingIndicatorInitListener implements VaadinServiceInitListener {
                 indicator.style.display = 'block';
                 window.setTimeout(() => { indicator.style.display = 'none'; }, 700);
               });
+              const setConnectionLandmark = () => {
+                const connection = document.querySelector('vaadin-connection-indicator');
+                if (!connection) return;
+                connection.setAttribute('role', 'region');
+                connection.setAttribute('aria-label', 'Status koneksi');
+              };
+              setConnectionLandmark();
+              document.addEventListener('vaadin-router-location-changed', setConnectionLandmark);
             }
             """;
 

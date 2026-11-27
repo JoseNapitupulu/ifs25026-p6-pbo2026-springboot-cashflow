@@ -2,6 +2,7 @@ package org.delcom.ifs25026p6pbo2026springbootcashflow.framework.auth;
 
 import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.server.WrappedSession;
+import jakarta.servlet.http.HttpSession;
 import org.delcom.ifs25026p6pbo2026springbootcashflow.domain.entity.User;
 import org.delcom.ifs25026p6pbo2026springbootcashflow.domain.repository.IUserRepository;
 
@@ -28,6 +29,11 @@ public final class AuthSession {
             httpSession.setAttribute(LOGGED_OUT_KEY, Boolean.FALSE);
             httpSession.setAttribute(USER_ID_KEY, user.getId());
         }
+    }
+
+    public static void login(HttpSession session, User user) {
+        session.setAttribute(LOGGED_OUT_KEY, Boolean.FALSE);
+        session.setAttribute(USER_ID_KEY, user.getId());
     }
 
     public static void logout() {
@@ -66,11 +72,27 @@ public final class AuthSession {
         return user;
     }
 
-    private static boolean isLoggedOut(VaadinSession session) {
-        if (Boolean.TRUE.equals(session.getAttribute(LOGGED_OUT_KEY))) {
-            return true;
+    public static Optional<User> currentUser(HttpSession session, IUserRepository userRepository) {
+        if (session == null || Boolean.TRUE.equals(session.getAttribute(LOGGED_OUT_KEY))) {
+            return Optional.empty();
         }
+        Object stored = session.getAttribute(USER_ID_KEY);
+        if (!(stored instanceof Integer userId)) {
+            return Optional.empty();
+        }
+        Optional<User> user = userRepository.findById(userId);
+        if (user.isEmpty()) {
+            session.removeAttribute(USER_ID_KEY);
+            session.setAttribute(LOGGED_OUT_KEY, Boolean.TRUE);
+        }
+        return user;
+    }
+
+    private static boolean isLoggedOut(VaadinSession session) {
         WrappedSession httpSession = session.getSession();
-        return httpSession != null && Boolean.TRUE.equals(httpSession.getAttribute(LOGGED_OUT_KEY));
+        if (httpSession != null && httpSession.getAttribute(LOGGED_OUT_KEY) instanceof Boolean loggedOut) {
+            return loggedOut;
+        }
+        return Boolean.TRUE.equals(session.getAttribute(LOGGED_OUT_KEY));
     }
 }

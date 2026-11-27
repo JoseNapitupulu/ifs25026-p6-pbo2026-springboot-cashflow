@@ -39,7 +39,7 @@ public class UsersView extends VerticalLayout implements BeforeEnterObserver {
     public void beforeEnter(BeforeEnterEvent event) {
         User user = AuthSession.currentUser(userRepository).orElse(null);
         if (user == null) {
-            event.forwardTo(LoginView.class);
+            event.forwardTo(LoginRedirectView.class);
         } else if (!user.isAdmin()) {
             Notification.show("Halaman ini hanya dapat diakses administrator");
             event.forwardTo(FinanceView.class);

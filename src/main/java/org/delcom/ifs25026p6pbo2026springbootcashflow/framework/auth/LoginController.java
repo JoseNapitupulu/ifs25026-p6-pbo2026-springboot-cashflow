@@ -59,19 +59,19 @@ public class LoginController {
                 {{error}}
                 <form method="post" action="/login">
                   <input type="hidden" name="_csrf" value="{{csrf}}">
-                  <label for="username">Username</label>
-                  <input id="username" name="username" type="text" autocomplete="username" required>
-                  <label for="password">Password</label>
+                  <label for="login-username">Username</label>
+                  <input id="login-username" name="username" type="text" autocomplete="username" required>
+                  <label for="login-password">Password</label>
                   <div class="password-row">
-                    <input id="password" name="password" type="password" autocomplete="current-password" required>
-                    <button id="toggle-password" type="button" aria-controls="password" aria-pressed="false">Tampilkan</button>
+                    <input id="login-password" name="password" type="password" autocomplete="current-password" required>
+                    <button id="toggle-password" type="button" aria-controls="login-password" aria-pressed="false">Tampilkan</button>
                   </div>
-                  <button class="submit" type="submit">Masuk</button>
+                  <button id="login-submit" class="submit" type="submit">Masuk</button>
                 </form>
                 <a class="register" href="/register">Belum punya akun? Daftar</a>
               </main>
               <script>
-                const password = document.getElementById('password');
+                const password = document.getElementById('login-password');
                 const toggle = document.getElementById('toggle-password');
                 toggle.addEventListener('click', () => {
                   const visible = password.type === 'text';

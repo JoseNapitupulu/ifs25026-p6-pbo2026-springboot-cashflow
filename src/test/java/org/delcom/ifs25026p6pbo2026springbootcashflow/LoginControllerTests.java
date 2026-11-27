@@ -33,6 +33,9 @@ class LoginControllerTests {
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertTrue(response.getBody().contains("<html lang=\"id\">"));
         assertTrue(response.getBody().contains("<main>"));
+        assertTrue(response.getBody().contains("id=\"login-username\""));
+        assertTrue(response.getBody().contains("id=\"login-password\""));
+        assertTrue(response.getBody().contains("id=\"login-submit\""));
         assertNotNull(request.getSession().getAttribute("cashflow.loginCsrfToken"));
         assertTrue(response.getBody().contains("name=\"_csrf\""));
     }

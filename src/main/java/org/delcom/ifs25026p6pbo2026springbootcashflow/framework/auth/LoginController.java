@@ -4,7 +4,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.delcom.ifs25026p6pbo2026springbootcashflow.domain.entity.User;
 import org.delcom.ifs25026p6pbo2026springbootcashflow.domain.exception.DomainException;
-import org.delcom.ifs25026p6pbo2026springbootcashflow.domain.repository.IUserRepository;
 import org.delcom.ifs25026p6pbo2026springbootcashflow.usecase.AuthUseCase;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpHeaders;
@@ -96,11 +95,9 @@ public class LoginController {
             """;
 
     private final AuthUseCase authUseCase;
-    private final IUserRepository userRepository;
 
-    public LoginController(AuthUseCase authUseCase, IUserRepository userRepository) {
+    public LoginController(AuthUseCase authUseCase) {
         this.authUseCase = authUseCase;
-        this.userRepository = userRepository;
     }
 
     @GetMapping(value = "/login", produces = MediaType.TEXT_HTML_VALUE)
@@ -108,9 +105,6 @@ public class LoginController {
             HttpServletRequest request,
             @RequestParam(name = "error", required = false) String error
     ) {
-        if (AuthSession.currentUser(request.getSession(false), userRepository).isPresent()) {
-            return redirect("/");
-        }
         String csrfToken = UUID.randomUUID().toString();
         request.getSession(true).setAttribute(CSRF_TOKEN_KEY, csrfToken);
         String errorMarkup = "1".equals(error) ? LOGIN_ERROR : "";

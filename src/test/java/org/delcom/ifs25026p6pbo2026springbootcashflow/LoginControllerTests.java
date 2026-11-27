@@ -25,7 +25,7 @@ import static org.mockito.Mockito.when;
 class LoginControllerTests {
     @Test
     void showLoginReturnsLightweightPageAndStoresCsrfToken() {
-        LoginController controller = new LoginController(mock(AuthUseCase.class), mock(IUserRepository.class));
+        LoginController controller = new LoginController(mock(AuthUseCase.class));
         MockHttpServletRequest request = new MockHttpServletRequest();
 
         var response = controller.showLogin(request, null);
@@ -41,9 +41,21 @@ class LoginControllerTests {
     }
 
     @Test
+    void showLoginRemainsReachableForAuthenticatedSession() {
+        LoginController controller = new LoginController(mock(AuthUseCase.class));
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.getSession(true).setAttribute("cashflow.currentUserId", 42);
+
+        var response = controller.showLogin(request, null);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertTrue(response.getBody().contains("id=\"login-submit\""));
+    }
+
+    @Test
     void loginRejectsInvalidCsrfTokenWithoutCallingAuthUseCase() {
         AuthUseCase authUseCase = mock(AuthUseCase.class);
-        LoginController controller = new LoginController(authUseCase, mock(IUserRepository.class));
+        LoginController controller = new LoginController(authUseCase);
 
         var response = controller.login("user", "password", "invalid", new MockHttpServletRequest());
 
@@ -55,7 +67,7 @@ class LoginControllerTests {
     void successfulLoginSharesServletSessionWithVaadinAuthentication() {
         AuthUseCase authUseCase = mock(AuthUseCase.class);
         IUserRepository userRepository = mock(IUserRepository.class);
-        LoginController controller = new LoginController(authUseCase, userRepository);
+        LoginController controller = new LoginController(authUseCase);
         User user = new User(42, "user", "hash", "Test User", Role.USER, null);
         when(authUseCase.login("user", "password")).thenReturn(user);
         when(userRepository.findById(42)).thenReturn(Optional.of(user));
